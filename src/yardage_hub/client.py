@@ -98,7 +98,8 @@ class YardageHub:
         approves, they become the course's scorecard_url.
 
         Each photo is a file path, bytes, or a binary file object: JPEG, PNG, or WebP, at most
-        2 MB. Resize phone photos first (about 2400 px on the long side). Location and other
+        2 MB and at least 1000 px on the long side. Resize phone photos first (about 2400 px on
+        the long side). The photos stay private until a reviewer approves them. Location and other
         metadata are removed on the server, so send them upright. If the course already has a
         scorecard_url, pass replaces_link=True only when the user says that link is wrong. App keys
         must pass contributor_ref. Returns { edit_id, status, submission_id, url, photos }.
