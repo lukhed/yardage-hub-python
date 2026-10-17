@@ -6,6 +6,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+from . import __version__
+
 BASE_URL = "https://yardage-hub.lukhed.workers.dev/v1"
 DOCS_URL = "https://lukeheide.com/sports/yardage-hub/docs"
 
@@ -105,7 +107,7 @@ class YardageHub:
 
     def _send(self, req):
         req.add_header("x-yardage-key", self.key)
-        req.add_header("User-Agent", "yardage-hub-python")
+        req.add_header("User-Agent", f"yardage-hub-python/{__version__}")
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                 return json.loads(resp.read() or b"null")
