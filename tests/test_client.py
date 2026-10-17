@@ -11,7 +11,7 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from yardage_hub import YardageHub, YardageHubError  # noqa: E402
+from yardage_hub import YardageHub, YardageHubError, __version__  # noqa: E402
 
 BASE = "https://yardage-hub.lukhed.workers.dev/v1"
 ID = "3f2c9a1e-0000-4000-8000-000000000001"
@@ -67,13 +67,18 @@ class ClientTest(unittest.TestCase):
         self.hub.report_course(ID, "numbers_wrong", note="hole 4")
         self.assertEqual(self.last()[1:], (f"{BASE}/courses/{ID}/reports", {"kind": "numbers_wrong", "note": "hole 4"}))
 
-    def test_every_call_carries_the_key(self):
+    def test_every_call_carries_the_key_and_version(self):
         self.hub.get_course(ID)
         self.assertEqual(self.sent[-1].get_header("X-yardage-key"), "yh_test")
+        self.assertEqual(self.sent[-1].get_header("User-agent"), f"yardage-hub-python/{__version__}")
 
     def test_returns_the_json(self):
         self.reply = {"total": 1, "courses": []}
         self.assertEqual(self.hub.search_courses("x"), {"total": 1, "courses": []})
+
+    def test_unknown_course_is_none(self):
+        self.reply = None
+        self.assertIsNone(self.hub.get_course(ID))
 
     def test_errors_carry_status_message_and_retry_after(self):
         def refuse(req, timeout):
