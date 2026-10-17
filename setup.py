@@ -1,8 +1,14 @@
+import re
+
 from setuptools import setup, find_packages
+
+# The version lives in src/yardage_hub/__init__.py; bump it there
+with open("src/yardage_hub/__init__.py", encoding="utf-8") as f:
+    version = re.search(r'^__version__ = "([^"]+)"', f.read(), re.M).group(1)
 
 setup(
     name="yardage_hub",
-    version="0.1.0",
+    version=version,
     description="Python client for the yardage-hub golf course API",
     long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
