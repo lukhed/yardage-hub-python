@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "yardage-hub"
+version = "0.1.0"
+description = "Python client for the yardage-hub golf course API"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Luke Heide" }]
+requires-python = ">=3.9"
+dependencies = []
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://lukeheide.com/sports/yardage-hub"
+Documentation = "https://lukeheide.com/sports/yardage-hub/docs"
+Source = "https://github.com/lukhed/yardage-hub-python"
+
+[tool.setuptools.packages.find]
+where = ["src"]
