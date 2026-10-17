@@ -110,11 +110,14 @@ result = hub.submit_scorecard_photos(course_id, ["front.jpg", "back.jpg"],
 result["url"]  # the photos; it becomes the course's scorecard_url once approved
 ```
 
+Photos stay **private until a reviewer approves them**: until then `url` returns 404, for you too.
+
 - **A photo is the card.** If the course already has a `scorecard_url`, the call is refused
   (409) unless you pass `replaces_link=True`. Pass it only when the user says the current link
   is wrong.
-- **JPEG, PNG, or WebP, at most 2 MB each.** Photos straight off a phone are 2–6 MB, so resize
-  first: about 2400 px on the long side, JPEG quality 85. With Pillow:
+- **JPEG, PNG, or WebP, at most 2 MB each, and at least 1000 px on the long side** (500 on the
+  short). Photos straight off a phone are 2–6 MB, so resize first: about 2400 px on the long
+  side, JPEG quality 85. With Pillow:
 
   ```python
   from io import BytesIO
@@ -132,7 +135,10 @@ result["url"]  # the photos; it becomes the course's scorecard_url once approved
   two calls against your daily quota. App keys must pass `contributor_ref`, since the per-user
   limit counts by it.
 - **Don't send cards with personal information** written on them (names, scores, handicaps).
-  Photos are public, and reviewers reject those.
+  Approved photos are public.
+- **Junk is deleted.** Photos that aren't a scorecard, can't be read, or show personal details are
+  rejected as junk and deleted within the hour. After 3 in 30 days, that user's photo uploads
+  are paused (403, saying until when). Links still work.
 
 ## Errors
 
@@ -157,11 +163,12 @@ except YardageHubError as e:
 |---|---|
 | 400 | Invalid input; the message says what |
 | 401 | Missing, wrong, or revoked key |
-| 403 | A read-only key tried to write |
+| 403 | A read-only key tried to write, or this user's photo uploads are paused for junk |
 | 404 | Unknown course or edit |
 | 409 | Scorecard photos for a course that already has a scorecard link (pass `replaces_link=True`), or a photo already sent |
 | 413 | A scorecard photo over 2 MB |
 | 415 | A scorecard photo that isn't a JPEG, PNG, or WebP |
+| 422 | A scorecard photo too small to read (under 1000 px on the long side or 500 on the short) |
 | 429 | Over the daily or per-minute limit, or a scorecard photo limit |
 | 503 | Scorecard photo storage is nearly full; uploads are paused |
 
