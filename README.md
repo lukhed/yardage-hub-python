@@ -11,7 +11,7 @@ This README is a quick start. The full API documentation is at
 ## Install
 
 ```bash
-pip install git+https://github.com/lukhed/yardage-hub-python
+pip install yardage-hub
 ```
 
 Python 3.9+, no dependencies.
