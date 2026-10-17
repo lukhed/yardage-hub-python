@@ -65,13 +65,14 @@ Name search forgives abbreviations, punctuation, and typos: "st johns", "mt plea
 | `vote_edit(edit_id, vote, reason, contributor_ref, contributor_name)` | Back (`1`) or doubt (`-1`) a pending edit, or remove your vote (`0`) |
 | `report_link(course_id, field, url, works, contributor_ref, contributor_name)` | Confirm a `website` or `scorecard_url` works, or report it dead |
 | `report_course(course_id, kind, note, evidence_url, contributor_ref, contributor_name)` | Report a scorecard as `scorecard_changed`, `numbers_wrong`, or `other` |
+| `submit_scorecard_photos(course_id, photos, note, replaces_link, contributor_ref, contributor_name)` | Send 1–4 photos of a course's scorecard; once approved they become its `scorecard_url` |
 
 Each method returns the API's JSON as Python dicts and lists. The fields are described in the
 [docs](https://lukeheide.com/sports/yardage-hub/docs).
 
 ## Writing: apply for write access
 
-Every key can read. The last four methods send data to a review queue, and a person reviews
+Every key can read. The last five methods send data to a review queue, and a person reviews
 every edit, so they need a key with **write access**. New keys don't have it; a key without it
 gets a 403.
 
@@ -98,6 +99,41 @@ hub.submit_edit(course_id, {
 It's validated right away (a bad payload raises a 400) and waits as `pending` until it's
 reviewed.
 
+### Scorecard photos
+
+Send 1–4 photos of a course's card, in order (front, back, …). Each one can be a file path,
+`bytes`, or a binary file object:
+
+```python
+result = hub.submit_scorecard_photos(course_id, ["front.jpg", "back.jpg"],
+                                     note="Card from the pro shop", contributor_ref="user-42")
+result["url"]  # the photos; it becomes the course's scorecard_url once approved
+```
+
+- **A photo is the card.** If the course already has a `scorecard_url`, the call is refused
+  (409) unless you pass `replaces_link=True`. Pass it only when the user says the current link
+  is wrong.
+- **JPEG, PNG, or WebP, at most 2 MB each.** Photos straight off a phone are 2–6 MB, so resize
+  first: about 2400 px on the long side, JPEG quality 85. With Pillow:
+
+  ```python
+  from io import BytesIO
+  from PIL import Image, ImageOps
+
+  img = ImageOps.exif_transpose(Image.open("card.jpg")).convert("RGB")
+  img.thumbnail((2400, 2400))
+  buf = BytesIO()
+  img.save(buf, "JPEG", quality=85)
+  hub.submit_scorecard_photos(course_id, buf.getvalue(), contributor_ref="user-42")
+  ```
+- **Metadata is removed** on the server, including GPS location and orientation, so send photos
+  upright (`exif_transpose` above does that).
+- **Limits:** 5 photos per user a day, 200 per app, 500 in all (UTC days). An upload counts as
+  two calls against your daily quota. App keys must pass `contributor_ref`, since the per-user
+  limit counts by it.
+- **Don't send cards with personal information** written on them (names, scores, handicaps).
+  Photos are public, and reviewers reject those.
+
 ## Errors
 
 A failed call raises `YardageHubError`, with `status`, `message`, and `retry_after` (seconds,
@@ -123,7 +159,11 @@ except YardageHubError as e:
 | 401 | Missing, wrong, or revoked key |
 | 403 | A read-only key tried to write |
 | 404 | Unknown course or edit |
-| 429 | Over the daily or per-minute limit |
+| 409 | Scorecard photos for a course that already has a scorecard link (pass `replaces_link=True`), or a photo already sent |
+| 413 | A scorecard photo over 2 MB |
+| 415 | A scorecard photo that isn't a JPEG, PNG, or WebP |
+| 429 | Over the daily or per-minute limit, or a scorecard photo limit |
+| 503 | Scorecard photo storage is nearly full; uploads are paused |
 
 ## Data and license
 
