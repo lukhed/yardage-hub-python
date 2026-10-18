@@ -1,9 +1,12 @@
 """The client builds the right request for each route and turns errors into YardageHubError.
 No network: urlopen is replaced. `python -m unittest` from the repo root."""
 
+import email
+import email.policy
 import io
 import json
 import sys
+import tempfile
 import unittest
 import urllib.error
 from pathlib import Path
@@ -66,6 +69,32 @@ class ClientTest(unittest.TestCase):
         self.assertEqual(self.last()[2], {"field": "website", "url": "https://a.example/", "works": False})
         self.hub.report_course(ID, "numbers_wrong", note="hole 4")
         self.assertEqual(self.last()[1:], (f"{BASE}/courses/{ID}/reports", {"kind": "numbers_wrong", "note": "hole 4"}))
+
+    def test_scorecard_photos_are_multipart(self):
+        self.reply = {"edit_id": ID, "status": "pending"}
+        with tempfile.TemporaryDirectory() as d:
+            back = Path(d) / "back.png"
+            back.write_bytes(b"\x89PNG back")
+            result = self.hub.submit_scorecard_photos(ID, [b"\xff\xd8 front", back], note="pro shop card",
+                                                      replaces_link=True, contributor_ref="42")
+        self.assertEqual(result, {"edit_id": ID, "status": "pending"})
+        req = self.sent[-1]
+        self.assertEqual((req.get_method(), req.full_url), ("POST", f"{BASE}/courses/{ID}/scorecard-photos"))
+        self.assertEqual(req.get_header("X-yardage-key"), "yh_test")
+        content_type = req.get_header("Content-type")
+        self.assertTrue(content_type.startswith("multipart/form-data; boundary="))
+        message = email.message_from_bytes(f"Content-Type: {content_type}\r\n\r\n".encode() + req.data,
+                                           policy=email.policy.HTTP)
+        parts = [(p.get_param("name", header="content-disposition"), p.get_payload(decode=True))
+                 for p in message.iter_parts()]
+        self.assertEqual(parts, [("note", b"pro shop card"), ("replaces_link", b"true"), ("contributor_ref", b"42"),
+                                 ("photos", b"\xff\xd8 front"), ("photos", b"\x89PNG back")])
+
+    def test_one_photo_can_be_passed_alone(self):
+        self.hub.submit_scorecard_photos(ID, io.BytesIO(b"\xff\xd8 card"))
+        self.assertIn(b"\xff\xd8 card", self.sent[-1].data)
+        self.assertIn(b'name="replaces_link"\r\n\r\nfalse', self.sent[-1].data)
+        self.assertNotIn(b'name="note"', self.sent[-1].data)
 
     def test_every_call_carries_the_key_and_version(self):
         self.hub.get_course(ID)

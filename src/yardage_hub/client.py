@@ -2,6 +2,7 @@
 
 import json
 import os
+import uuid
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -91,6 +92,40 @@ class YardageHub:
         return self._post(f"/courses/{course_id}/reports", kind=kind, note=note, evidence_url=evidence_url,
                           contributor_ref=contributor_ref, contributor_name=contributor_name)
 
+    def submit_scorecard_photos(self, course_id, photos, note=None, replaces_link=False,
+                                contributor_ref=None, contributor_name=None):
+        """Send 1-4 photos of a course's scorecard, in order (front, back, ...). Once a reviewer
+        approves, they become the course's scorecard_url.
+
+        Each photo is a file path, bytes, or a binary file object: JPEG, PNG, or WebP, at most
+        2 MB and at least 1000 px on the long side. Resize phone photos first (about 2400 px on
+        the long side). The photos stay private until a reviewer approves them. Location and other
+        metadata are removed on the server, so send them upright. If the course already has a
+        scorecard_url, pass replaces_link=True only when the user says that link is wrong. App keys
+        must pass contributor_ref. Returns { edit_id, status, submission_id, url, photos }.
+        """
+        if isinstance(photos, (str, bytes, os.PathLike)) or hasattr(photos, "read"):
+            photos = [photos]
+        files = [_read_photo(p) for p in photos]
+        fields = {"note": note, "replaces_link": "true" if replaces_link else "false",
+                  "contributor_ref": contributor_ref, "contributor_name": contributor_name}
+        boundary = uuid.uuid4().hex
+        crlf = b"\r\n"
+        parts = []
+        for name, value in fields.items():
+            if value is not None:
+                head = f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"\r\n\r\n'
+                parts.append(head.encode() + str(value).encode() + crlf)
+        for i, data in enumerate(files, 1):
+            head = (f'--{boundary}\r\nContent-Disposition: form-data; name="photos"; filename="photo-{i}"\r\n'
+                    'Content-Type: application/octet-stream\r\n\r\n')
+            parts.append(head.encode() + data + crlf)
+        body = b"".join(parts) + f"--{boundary}--\r\n".encode()
+        req = urllib.request.Request(self.base_url + f"/courses/{course_id}/scorecard-photos", data=body,
+                                     method="POST")
+        req.add_header("Content-Type", f"multipart/form-data; boundary={boundary}")
+        return self._send(req)
+
     # ── HTTP ─────────────────────────────────────────────────────────────────
 
     def _get(self, path, **params):
@@ -117,3 +152,13 @@ class YardageHub:
             except ValueError:
                 message = e.reason
             raise YardageHubError(e.code, message, e.headers.get("Retry-After")) from None
+
+
+def _read_photo(photo):
+    """A photo's bytes, from bytes, a binary file object, or a path."""
+    if isinstance(photo, bytes):
+        return photo
+    if hasattr(photo, "read"):
+        return photo.read()
+    with open(photo, "rb") as f:
+        return f.read()
