@@ -50,6 +50,8 @@ class ClientTest(unittest.TestCase):
     def test_reads_are_gets_with_a_query_string(self):
         self.hub.search_courses("presidio", state="CA", kinds=["course", "par3"], page_size=5)
         self.assertEqual(self.last(), ("GET", f"{BASE}/courses?q=presidio&state=CA&kinds=course%2Cpar3&page_size=5", None))
+        self.hub.search_courses("cattails", include_closed=True)
+        self.assertEqual(self.last()[1], f"{BASE}/courses?q=cattails&include_closed=true")
         self.hub.get_course(ID)
         self.assertEqual(self.last()[:2], ("GET", f"{BASE}/courses/{ID}"))
         self.hub.course_edits(ID, page_size=10)

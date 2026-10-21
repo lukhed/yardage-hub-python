@@ -57,7 +57,7 @@ Name search forgives abbreviations, punctuation, and typos: "st johns", "mt plea
 
 | Method | What it does |
 |---|---|
-| `search_courses(q, state, lat, lon, radius_km, kinds, page, page_size)` | Search by name, state, or distance. `kinds` defaults to `["course", "par3"]`; also `practice`, `disc`, `mini` |
+| `search_courses(q, state, lat, lon, radius_km, kinds, page, page_size, include_closed)` | Search by name, state, or distance. `kinds` defaults to `["course", "par3"]`; also `practice`, `disc`, `mini`. `include_closed=True` also returns closed courses |
 | `get_course(course_id)` | One course: holes, tees and ratings, links, completeness. `None` for an unknown id |
 | `course_edits(course_id, page_size, contributor_ref)` | A course's edit history, newest first |
 | `courses_needing_help(state, lat, lon, radius_km, needs, page, page_size)` | Courses missing something a contributor can add, by state or near a point |

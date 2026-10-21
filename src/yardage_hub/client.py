@@ -44,11 +44,12 @@ class YardageHub:
     # ── Reads ────────────────────────────────────────────────────────────────
 
     def search_courses(self, q=None, state=None, lat=None, lon=None, radius_km=None, kinds=None,
-                       page=None, page_size=None):
+                       page=None, page_size=None, include_closed=None):
         """Search courses by name, state, or distance. Give at least one of q, state, or lat and lon.
+        include_closed=True also returns closed courses (each has a status), after active ones.
         Returns { total, page, page_size, courses }."""
         return self._get("/courses", q=q, state=state, lat=lat, lon=lon, radius_km=radius_km,
-                         kinds=kinds, page=page, page_size=page_size)
+                         kinds=kinds, page=page, page_size=page_size, include_closed=include_closed)
 
     def get_course(self, course_id):
         """One course with its holes, tees, ratings, and links. None for an unknown id."""
@@ -129,7 +130,7 @@ class YardageHub:
     # ── HTTP ─────────────────────────────────────────────────────────────────
 
     def _get(self, path, **params):
-        query = {k: ",".join(v) if isinstance(v, (list, tuple)) else v
+        query = {k: ",".join(v) if isinstance(v, (list, tuple)) else str(v).lower() if isinstance(v, bool) else v
                  for k, v in params.items() if v is not None}
         url = self.base_url + path + ("?" + urllib.parse.urlencode(query) if query else "")
         return self._send(urllib.request.Request(url, method="GET"))
