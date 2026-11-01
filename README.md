@@ -39,7 +39,7 @@ print(course["course_name"], course["par"])
 for tee in course["tee_sets"]:
     print(tee["tee_name"], tee["yardage"], [(r["gender"], r["course_rating"], r["slope"]) for r in tee["ratings"]])
 for hole in course["holes_data"]:
-    print(hole["number"], hole["par"], hole["handicap_index"], hole["yardages"])
+    print(hole["number"], hole["par"], hole["handicap_index"], hole["yardages"], hole["pars"])
 
 # Courses near a point (km)
 near = hub.search_courses(lat=42.28, lon=-83.74, radius_km=10)
@@ -49,6 +49,10 @@ help = hub.courses_needing_help(lat=42.28, lon=-83.74, radius_km=25)
 for c in help["courses"]:
     print(c["course_name"], [n["need"] for n in c["needs"]])
 ```
+
+A hole's `pars` is `None`, or the tees that play it at a par of their own, by `tee_key`
+(`{"red": 5}`). A tee's par for a hole is its entry in `pars`, else `women_par` for a women's
+rating that has one, else `par`.
 
 Name search forgives abbreviations, punctuation, and typos: "st johns", "mt pleasant", and
 "pebel beach" all find what you mean. It reads the club and course name together, so
@@ -98,9 +102,11 @@ hub.submit_edit(course_id, {
     "course": {"phone": "(415) 561-4661", "scorecard_url": "https://example.com/scorecard.pdf"},
     "holes": [{"number": 1, "par": 4, "handicap": 7}],
     "tees": [{"name": "Blue", "color": "blue", "gender": "M", "rating": 70.8, "slope": 132,
-              "yardages": {"1": 512, "2": 410}}],
+              "yardages": {"1": 512, "2": 410}, "pars": {"2": 5}}],
 }, note="From the 2026 scorecard")
 ```
+
+A tee's `pars` holds only the holes it plays at a different par from the hole's; `null` clears one.
 
 It's validated right away (a bad payload raises a 400) and waits as `pending` until it's
 reviewed.
