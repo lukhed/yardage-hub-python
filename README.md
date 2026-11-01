@@ -106,7 +106,7 @@ hub.submit_edit(course_id, {
 }, note="From the 2026 scorecard")
 ```
 
-A tee's `pars` holds only the holes it plays at a different par from the hole's; `null` clears one.
+A tee's `pars` holds only the holes it plays at a different par from the hole's; `None` clears one.
 
 It's validated right away (a bad payload raises a 400) and waits as `pending` until it's
 reviewed.
