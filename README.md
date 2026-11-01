@@ -51,7 +51,11 @@ for c in help["courses"]:
 ```
 
 Name search forgives abbreviations, punctuation, and typos: "st johns", "mt pleasant", and
-"pebel beach" all find what you mean.
+"pebel beach" all find what you mean. It reads the club and course name together, so
+"detroit north" finds Detroit Golf Club's North Course.
+
+Courses at the same club share a `club_name`, and each keeps its own `course_name` ("North
+Course"). `get_course` adds `facility`, the club with its address, postcode, phone, and website.
 
 ## Methods
 
@@ -62,6 +66,8 @@ Name search forgives abbreviations, punctuation, and typos: "st johns", "mt plea
 | `course_edits(course_id, page_size, contributor_ref)` | A course's edit history, newest first |
 | `courses_needing_help(state, lat, lon, radius_km, needs, page, page_size)` | Courses missing something a contributor can add, by state or near a point |
 | `submit_edit(course_id, payload, note, evidence_url, contributor_ref, contributor_name)` | Propose a change (contact details, holes, tees, ratings, yardages, scorecard link) |
+| `link_course(course_id, club_id, note, evidence_url, contributor_ref, contributor_name)` | Propose linking a course to its club |
+| `unlink_course(course_id, note, evidence_url, contributor_ref, contributor_name)` | Propose removing a course from its club |
 | `vote_edit(edit_id, vote, reason, contributor_ref, contributor_name)` | Back (`1`) or doubt (`-1`) a pending edit, or remove your vote (`0`) |
 | `report_link(course_id, field, url, works, contributor_ref, contributor_name)` | Confirm a `website` or `scorecard_url` works, or report it dead |
 | `report_course(course_id, kind, note, evidence_url, contributor_ref, contributor_name)` | Report a scorecard as `scorecard_changed`, `numbers_wrong`, or `other` |
@@ -72,7 +78,7 @@ Each method returns the API's JSON as Python dicts and lists. The fields are des
 
 ## Writing: apply for write access
 
-Every key can read. The last five methods send data to a review queue, and a person reviews
+Every key can read. The last seven methods send data to a review queue, and a person reviews
 every edit, so they need a key with **write access**. New keys don't have it; a key without it
 gets a 403.
 
@@ -98,6 +104,19 @@ hub.submit_edit(course_id, {
 
 It's validated right away (a bad payload raises a 400) and waits as `pending` until it's
 reviewed.
+
+### Clubs
+
+Say which club a course belongs to. Like an edit, it waits for review:
+
+```python
+hub.link_course(course_id, club_id, note="North and South are both Detroit Golf Club")
+hub.unlink_course(course_id, note="This course isn't part of that club")
+```
+
+Once a link is approved, the club is a facility: search stops returning it and returns its courses
+instead. An unlinked club stays a facility. `submit_edit` can do the same with a `link` section:
+`{"link": {"club_id": club_id}}`, or `None` to unlink.
 
 ### Scorecard photos
 

@@ -75,6 +75,19 @@ class YardageHub:
                           evidence_url=evidence_url, contributor_ref=contributor_ref,
                           contributor_name=contributor_name)
 
+    def link_course(self, course_id, club_id, note=None, evidence_url=None, contributor_ref=None,
+                    contributor_name=None):
+        """Propose linking a course to its club. Once approved, the club is a facility and the
+        course has its facility_id and club_name. Returns { id, status }."""
+        return self._post(f"/courses/{course_id}/club", club_id=club_id, note=note, evidence_url=evidence_url,
+                          contributor_ref=contributor_ref, contributor_name=contributor_name)
+
+    def unlink_course(self, course_id, note=None, evidence_url=None, contributor_ref=None,
+                      contributor_name=None):
+        """Propose removing a course from its club. The club stays a facility. Returns { id, status }."""
+        return self._post(f"/courses/{course_id}/club/unlink", note=note, evidence_url=evidence_url,
+                          contributor_ref=contributor_ref, contributor_name=contributor_name)
+
     def vote_edit(self, edit_id, vote, reason=None, contributor_ref=None, contributor_name=None):
         """Back (1) or doubt (-1) a pending edit, or remove your vote (0). Returns { up, down, my_vote }."""
         return self._post(f"/edits/{edit_id}/votes", vote=vote, reason=reason,

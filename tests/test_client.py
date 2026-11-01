@@ -71,6 +71,11 @@ class ClientTest(unittest.TestCase):
         self.assertEqual(self.last()[2], {"field": "website", "url": "https://a.example/", "works": False})
         self.hub.report_course(ID, "numbers_wrong", note="hole 4")
         self.assertEqual(self.last()[1:], (f"{BASE}/courses/{ID}/reports", {"kind": "numbers_wrong", "note": "hole 4"}))
+        self.hub.link_course(ID, "club-1", note="Same club", contributor_ref="user-42")
+        self.assertEqual(self.last()[1:], (f"{BASE}/courses/{ID}/club",
+                                           {"club_id": "club-1", "note": "Same club", "contributor_ref": "user-42"}))
+        self.hub.unlink_course(ID, note="Wrong club")
+        self.assertEqual(self.last()[1:], (f"{BASE}/courses/{ID}/club/unlink", {"note": "Wrong club"}))
 
     def test_scorecard_photos_are_multipart(self):
         self.reply = {"edit_id": ID, "status": "pending"}
