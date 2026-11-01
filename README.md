@@ -52,7 +52,8 @@ for c in help["courses"]:
 
 A hole's `pars` is `None`, or the tees that play it at a par of their own, by `tee_key`
 (`{"red": 5}`). A tee's par for a hole is its entry in `pars`, else `women_par` for a women's
-rating that has one, else `par`.
+rating that has one, else `par`. A hole's `handicaps` works the same way for a tee's handicap, with
+`women_handicap_index` and `handicap_index`.
 
 Name search forgives abbreviations, punctuation, and typos: "st johns", "mt pleasant", and
 "pebel beach" all find what you mean. It reads the club and course name together, so
@@ -102,11 +103,11 @@ hub.submit_edit(course_id, {
     "course": {"phone": "(415) 561-4661", "scorecard_url": "https://example.com/scorecard.pdf"},
     "holes": [{"number": 1, "par": 4, "handicap": 7}],
     "tees": [{"name": "Blue", "color": "blue", "gender": "M", "rating": 70.8, "slope": 132,
-              "yardages": {"1": 512, "2": 410}, "pars": {"2": 5}}],
+              "yardages": {"1": 512, "2": 410}, "pars": {"2": 5}, "handicaps": {"1": 3}}],
 }, note="From the 2026 scorecard")
 ```
 
-A tee's `pars` holds only the holes it plays at a different par from the hole's; `None` clears one.
+A tee's `pars` and `handicaps` hold only the holes where it differs from the hole; `None` clears one.
 
 It's validated right away (a bad payload raises a 400) and waits as `pending` until it's
 reviewed.
