@@ -1,6 +1,6 @@
 """Python client for the yardage-hub golf course API."""
 
-__version__ = "0.4.1"
+__version__ = "0.4.2"
 
 from .client import BASE_URL, DOCS_URL, YardageHub, YardageHubError
 
