@@ -33,7 +33,9 @@ hub = YardageHub("yh_...")   # or set YARDAGE_HUB_KEY and call YardageHub()
 ```python
 # Find a course
 found = hub.search_courses("pebble beach", state="CA")
-course = hub.get_course(found["courses"][0]["id"])
+result = found["courses"][0]
+# A club is one result, with its rounds in `courses`: pick one to get a scorecard
+course = hub.get_course(result["courses"][0]["id"] if "courses" in result else result["id"])
 
 print(course["course_name"], course["par"])
 for tee in course["tee_sets"]:
@@ -62,6 +64,43 @@ Name search forgives abbreviations, punctuation, and typos: "st johns", "mt plea
 Courses at the same club share a `club_name`, and each keeps its own `course_name` ("North
 Course"). `get_course` adds `facility`, the club with its address, postcode, phone, and website.
 
+### Clubs in search
+
+A club is one search result, with `kind` `"facility"` and its active rounds in `courses`, so a
+course in a club is never a result of its own. `get_course` on a club returns the club, not a
+scorecard, so pick a round first:
+
+```python
+for result in hub.search_courses("golden fox", state="MI")["courses"]:
+    if "courses" in result:  # a club
+        rounds = [c for c in result["courses"] if c["matched"]] or result["courses"]
+        print(result["course_name"], [c["course_name"] for c in rounds])
+    else:
+        print(result["course_name"])
+```
+
+`matched` says which rounds the search hit. `kinds` applies to rounds, so a club lists only rounds of
+the kinds you asked for, and appears if it has one or has no rounds yet (`courses` is `[]`). `total`,
+`page`, and `page_size` count results. Courses not in a club have no `courses` field.
+
+### Scorecard link, image, and errors
+
+A course can have a link and an image, and `get_course` describes both in `scorecards`:
+
+```python
+course["scorecard_url"]                      # the link, as before
+cards = course["scorecards"]
+cards["link"]    # {"url": ..., "read": True, "errors": [...]}
+cards["image"]   # {"url": None, "read": False, "errors": []}
+cards["numbers_from"], cards["numbers_read_at"]  # which card the numbers came from, and when
+```
+
+`read` says whether we've read that card; one with `read: False` next to existing numbers may be
+newer than the numbers. `errors` lists mistakes printed on that card, so an odd number can be told
+from a mistake of ours: each has `kind` (`total`, `yardage`, `par`, `handicap`, `label`, `other`),
+`tee`, `hole`, and a `note` saying what's wrong and what we stored. `completeness` adds
+`scorecard_image`, and `courses_needing_help` results add `scorecard_image_url`.
+
 ## Methods
 
 | Method | What it does |
@@ -76,7 +115,7 @@ Course"). `get_course` adds `facility`, the club with its address, postcode, pho
 | `vote_edit(edit_id, vote, reason, contributor_ref, contributor_name)` | Back (`1`) or doubt (`-1`) a pending edit, or remove your vote (`0`) |
 | `report_link(course_id, field, url, works, contributor_ref, contributor_name)` | Confirm a `website` or `scorecard_url` works, or report it dead |
 | `report_course(course_id, kind, note, evidence_url, contributor_ref, contributor_name)` | Report a scorecard as `scorecard_changed`, `numbers_wrong`, or `other` |
-| `submit_scorecard_photos(course_id, photos, note, replaces_link, contributor_ref, contributor_name)` | Send 1–4 photos of a course's scorecard; once approved they become its `scorecard_url` |
+| `submit_scorecard_photos(course_id, photos, note, contributor_ref, contributor_name)` | Send 1–4 photos of a course's scorecard; once approved they become its `scorecard_url` |
 
 Each method returns the API's JSON as Python dicts and lists. The fields are described in the
 [docs](https://lukeheide.com/sports/yardage-hub/docs).
@@ -121,8 +160,8 @@ hub.link_course(course_id, club_id, note="North and South are both Detroit Golf 
 hub.unlink_course(course_id, note="This course isn't part of that club")
 ```
 
-Once a link is approved, the club is a facility: search stops returning it and returns its courses
-instead. An unlinked club stays a facility. `submit_edit` can do the same with a `link` section:
+Once a link is approved, the club is a facility, and search returns it with its courses inside. An
+unlinked club stays a facility. `submit_edit` can do the same with a `link` section:
 `{"link": {"club_id": club_id}}`, or `None` to unlink.
 
 ### Scorecard photos
@@ -133,14 +172,13 @@ Send 1–4 photos of a course's card, in order (front, back, …). Each one can 
 ```python
 result = hub.submit_scorecard_photos(course_id, ["front.jpg", "back.jpg"],
                                      note="Card from the pro shop", contributor_ref="user-42")
-result["url"]  # the photos; it becomes the course's scorecard_url once approved
+result["url"]  # the photos; it becomes the course's scorecard image once approved
 ```
 
 Photos stay **private until a reviewer approves them**: until then `url` returns 404, for you too.
 
-- **A photo is the card.** If the course already has a `scorecard_url`, the call is refused
-  (409) unless you pass `replaces_link=True`. Pass it only when the user says the current link
-  is wrong.
+- **A photo sits beside any link.** A course with a `scorecard_url` can take photos too, and the
+  link stays. Approved photos replace any earlier image, and they don't change the course's numbers.
 - **JPEG, PNG, or WebP, at most 2 MB each, and at least 1000 px on the long side** (500 on the
   short). Photos straight off a phone are 2–6 MB, so resize first: about 2400 px on the long
   side, JPEG quality 85. With Pillow:
@@ -191,7 +229,7 @@ except YardageHubError as e:
 | 401 | Missing, wrong, or revoked key |
 | 403 | A read-only key tried to write, or this user's photo uploads are paused for junk |
 | 404 | Unknown course or edit |
-| 409 | Scorecard photos for a course that already has a scorecard link (pass `replaces_link=True`), or a photo already sent |
+| 409 | A scorecard photo already sent for this course |
 | 413 | A scorecard photo over 2 MB |
 | 415 | A scorecard photo that isn't a JPEG, PNG, or WebP |
 | 422 | A scorecard photo too small to read (under 1000 px on the long side or 500 on the short) |

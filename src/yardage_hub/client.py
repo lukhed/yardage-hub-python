@@ -47,6 +47,8 @@ class YardageHub:
                        page=None, page_size=None, include_closed=None):
         """Search courses by name, state, or distance. Give at least one of q, state, or lat and lon.
         include_closed=True also returns closed courses (each has a status), after active ones.
+        A club is one result with kind "facility" and its rounds in `courses`, each with `matched`;
+        get_course on a club returns the club, not a scorecard, so pick a round first.
         Returns { total, page, page_size, courses }."""
         return self._get("/courses", q=q, state=state, lat=lat, lon=lon, radius_km=radius_km,
                          kinds=kinds, page=page, page_size=page_size, include_closed=include_closed)
@@ -106,23 +108,20 @@ class YardageHub:
         return self._post(f"/courses/{course_id}/reports", kind=kind, note=note, evidence_url=evidence_url,
                           contributor_ref=contributor_ref, contributor_name=contributor_name)
 
-    def submit_scorecard_photos(self, course_id, photos, note=None, replaces_link=False,
-                                contributor_ref=None, contributor_name=None):
+    def submit_scorecard_photos(self, course_id, photos, note=None, contributor_ref=None, contributor_name=None):
         """Send 1-4 photos of a course's scorecard, in order (front, back, ...). Once a reviewer
-        approves, they become the course's scorecard_url.
+        approves, they become the course's scorecard image, beside any link.
 
         Each photo is a file path, bytes, or a binary file object: JPEG, PNG, or WebP, at most
         2 MB and at least 1000 px on the long side. Resize phone photos first (about 2400 px on
         the long side). The photos stay private until a reviewer approves them. Location and other
-        metadata are removed on the server, so send them upright. If the course already has a
-        scorecard_url, pass replaces_link=True only when the user says that link is wrong. App keys
-        must pass contributor_ref. Returns { edit_id, status, submission_id, url, photos }.
+        metadata are removed on the server, so send them upright. App keys must pass
+        contributor_ref. Returns { edit_id, status, submission_id, url, photos }.
         """
         if isinstance(photos, (str, bytes, os.PathLike)) or hasattr(photos, "read"):
             photos = [photos]
         files = [_read_photo(p) for p in photos]
-        fields = {"note": note, "replaces_link": "true" if replaces_link else "false",
-                  "contributor_ref": contributor_ref, "contributor_name": contributor_name}
+        fields = {"note": note, "contributor_ref": contributor_ref, "contributor_name": contributor_name}
         boundary = uuid.uuid4().hex
         crlf = b"\r\n"
         parts = []

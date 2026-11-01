@@ -83,7 +83,7 @@ class ClientTest(unittest.TestCase):
             back = Path(d) / "back.png"
             back.write_bytes(b"\x89PNG back")
             result = self.hub.submit_scorecard_photos(ID, [b"\xff\xd8 front", back], note="pro shop card",
-                                                      replaces_link=True, contributor_ref="42")
+                                                      contributor_ref="42")
         self.assertEqual(result, {"edit_id": ID, "status": "pending"})
         req = self.sent[-1]
         self.assertEqual((req.get_method(), req.full_url), ("POST", f"{BASE}/courses/{ID}/scorecard-photos"))
@@ -94,13 +94,13 @@ class ClientTest(unittest.TestCase):
                                            policy=email.policy.HTTP)
         parts = [(p.get_param("name", header="content-disposition"), p.get_payload(decode=True))
                  for p in message.iter_parts()]
-        self.assertEqual(parts, [("note", b"pro shop card"), ("replaces_link", b"true"), ("contributor_ref", b"42"),
+        self.assertEqual(parts, [("note", b"pro shop card"), ("contributor_ref", b"42"),
                                  ("photos", b"\xff\xd8 front"), ("photos", b"\x89PNG back")])
 
     def test_one_photo_can_be_passed_alone(self):
         self.hub.submit_scorecard_photos(ID, io.BytesIO(b"\xff\xd8 card"))
         self.assertIn(b"\xff\xd8 card", self.sent[-1].data)
-        self.assertIn(b'name="replaces_link"\r\n\r\nfalse', self.sent[-1].data)
+        self.assertNotIn(b'name="replaces_link"', self.sent[-1].data)
         self.assertNotIn(b'name="note"', self.sent[-1].data)
 
     def test_every_call_carries_the_key_and_version(self):
