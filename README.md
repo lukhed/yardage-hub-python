@@ -112,7 +112,7 @@ from a mistake of ours: each has `kind` (`total`, `yardage`, `par`, `handicap`, 
 | `course_edits(course_id, page_size, contributor_ref)` | A course's edit history, newest first |
 | `courses_needing_help(state, lat, lon, radius_km, needs, page, page_size)` | Courses missing something a contributor can add, by state or near a point |
 | `submit_edit(course_id, payload, note, evidence_url, contributor_ref, contributor_name)` | Propose a change (contact details, holes, tees, ratings, yardages, scorecard link) |
-| `link_course(course_id, club_id, note, evidence_url, contributor_ref, contributor_name)` | Propose linking a course to its club |
+| `link_course(course_id, club_id, note, evidence_url, contributor_ref, contributor_name, new_club, course_name)` | Propose linking a course to its club, or to a new one |
 | `unlink_course(course_id, note, evidence_url, contributor_ref, contributor_name)` | Propose removing a course from its club |
 | `vote_edit(edit_id, vote, reason, contributor_ref, contributor_name)` | Back (`1`) or doubt (`-1`) a pending edit, or remove your vote (`0`) |
 | `report_link(course_id, field, url, works, contributor_ref, contributor_name)` | Confirm a `website` or `scorecard_url` works, or report it dead |
@@ -166,6 +166,18 @@ hub.unlink_course(course_id, note="This course isn't part of that club")
 Once a link is approved, the club is a facility, and search returns it with its courses inside. An
 unlinked club stays a facility. `submit_edit` can do the same with a `link` section:
 `{"link": {"club_id": club_id}}`, or `None` to unlink.
+
+If the club has no row yet, create it with the link, and give the course its own name:
+
+```python
+hub.link_course(course_id, new_club={"name": "Arcadia Bluffs Golf Club"}, course_name="The Bluffs Course")
+```
+
+It's one edit, so one approval creates the club, with the course's address and contact, and links the
+course. The course keeps its holes, tees, and scorecard. Send one of `club_id` and `new_club`. A 400
+means the course would keep the club's name, or a club of that name exists in the state.
+
+A course with tees can't become a club, through a link or `"kind": "facility"`: use `new_club`.
 
 ### Scorecard photos
 

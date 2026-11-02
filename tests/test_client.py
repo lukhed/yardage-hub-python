@@ -74,6 +74,10 @@ class ClientTest(unittest.TestCase):
         self.hub.link_course(ID, "club-1", note="Same club", contributor_ref="user-42")
         self.assertEqual(self.last()[1:], (f"{BASE}/courses/{ID}/club",
                                            {"club_id": "club-1", "note": "Same club", "contributor_ref": "user-42"}))
+        self.hub.link_course(ID, new_club={"name": "Arcadia Bluffs Golf Club"}, course_name="The Bluffs Course")
+        self.assertEqual(self.last()[1:], (f"{BASE}/courses/{ID}/club",
+                                           {"new_club": {"name": "Arcadia Bluffs Golf Club"},
+                                            "course_name": "The Bluffs Course"}))
         self.hub.unlink_course(ID, note="Wrong club")
         self.assertEqual(self.last()[1:], (f"{BASE}/courses/{ID}/club/unlink", {"note": "Wrong club"}))
 
