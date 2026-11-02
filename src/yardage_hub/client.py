@@ -77,12 +77,15 @@ class YardageHub:
                           evidence_url=evidence_url, contributor_ref=contributor_ref,
                           contributor_name=contributor_name)
 
-    def link_course(self, course_id, club_id, note=None, evidence_url=None, contributor_ref=None,
-                    contributor_name=None):
+    def link_course(self, course_id, club_id=None, note=None, evidence_url=None, contributor_ref=None,
+                    contributor_name=None, new_club=None, course_name=None):
         """Propose linking a course to its club. Once approved, the club is a facility and the
-        course has its facility_id and club_name. Returns { id, status }."""
-        return self._post(f"/courses/{course_id}/club", club_id=club_id, note=note, evidence_url=evidence_url,
-                          contributor_ref=contributor_ref, contributor_name=contributor_name)
+        course has its facility_id and club_name. Give club_id, or new_club={"name": ...} for a club
+        with no row yet: it's created with the course's address and contact, on the same approval.
+        course_name renames the course in the same edit. Returns { id, status }."""
+        return self._post(f"/courses/{course_id}/club", club_id=club_id, new_club=new_club, course_name=course_name,
+                          note=note, evidence_url=evidence_url, contributor_ref=contributor_ref,
+                          contributor_name=contributor_name)
 
     def unlink_course(self, course_id, note=None, evidence_url=None, contributor_ref=None,
                       contributor_name=None):
