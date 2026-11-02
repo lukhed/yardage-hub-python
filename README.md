@@ -55,7 +55,9 @@ for c in help["courses"]:
 A hole's `pars` is `None`, or the tees that play it at a par of their own, by `tee_key`
 (`{"red": 5}`). A tee's par for a hole is its entry in `pars`, else `women_par` for a women's
 rating that has one, else `par`. A hole's `handicaps` works the same way for a tee's handicap, with
-`women_handicap_index` and `handicap_index`.
+`women_handicap_index` and `handicap_index`. A hole's `alt_yardages` is `None`, or a second real
+yardage by `tee_key` (`{"blue": 386}`), with `alt_yardage_label` saying what it is (`"New green"`)
+when that's known; a tee's total uses `yardages`.
 
 Name search forgives abbreviations, punctuation, and typos: "st johns", "mt pleasant", and
 "pebel beach" all find what you mean. It reads the club and course name together, so
@@ -147,6 +149,7 @@ hub.submit_edit(course_id, {
 ```
 
 A tee's `pars` and `handicaps` hold only the holes where it differs from the hole; `None` clears one.
+A tee can send `alt_yardages` the same way, and a hole takes `alt_yardage_label`.
 
 It's validated right away (a bad payload raises a 400) and waits as `pending` until it's
 reviewed.
